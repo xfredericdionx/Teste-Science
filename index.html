@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labo Virtuel : Concentration et Dilution (3e secondaire - PFEQ)</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Police Google Fonts : Inter et JetBrains Mono pour les formules -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Icônes Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        science: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Styles personnalisés pour les curseurs (range inputs) */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+            border: 3px solid #ffffff;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.12);
+            background: #1d4ed8;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        /* Curseur violet pour le soluté */
+        input[type=range].slider-solute::-webkit-slider-thumb {
+            background: #7c3aed;
+            box-shadow: 0 2px 6px rgba(124, 58, 237, 0.4);
+        }
+        input[type=range].slider-solute::-webkit-slider-thumb:hover {
+            background: #6d28d9;
+        }
+        /* Curseur cyan pour l'eau/solvant */
+        input[type=range].slider-solvent::-webkit-slider-thumb {
+            background: #0284c7;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+        }
+        input[type=range].slider-solvent::-webkit-slider-thumb:hover {
+            background: #0369a1;
+        }
+
+        /* Animations douces */
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-blue-200 selection:text-blue-900">
+
+    <!-- EN-TÊTE DE L'APPLICATION -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md">
+                    <i class="ph-bold ph-flask text-2xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Labo Virtuel : Concentration & Dilution</h1>
+                        <span class="hidden sm:inline-block px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">Sec. 3 • PFEQ</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500">Univers matériel • Modèle particulaire et calculs de solutions aqueuses</p>
+                </div>
+            </div>
+
+            <!-- NAVIGATION PAR ONGLETS (3 MODES) -->
+            <nav class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 w-full md:w-auto justify-between sm:justify-center gap-1" role="tablist">
+                <button id="tab-dissolution" onclick="switchMode('dissolution')" class="tab-btn flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all bg-white text-blue-700 shadow-sm">
+                    <i class="ph-bold ph-drop-half-bottom text-base"></i>
+                    <span>1. Dissolution</span>
+                </button>
+                <button id="tab-dilution" onclick="switchMode('dilution')" class="tab-btn flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all">
+                    <i class="ph-bold ph-waves text-base"></i>
+                    <span>2. Dilution</span>
+                </button>
+                <button id="tab-defi" onclick="switchMode('defi')" class="tab-btn flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all">
+                    <i class="ph-bold ph-trophy text-base text-amber-500"></i>
+                    <span>Mode Défi</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- BANDEAU CONSIGNE DU MODE DÉFI (Masqué par défaut) -->
+        <div id="challenge-banner" class="hidden mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                        <i class="ph-bold ph-target text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <span class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900" id="challenge-type-badge">Défi Dissolution</span>
+                            <span class="text-xs font-semibold text-slate-500" id="challenge-score">Défis réussis : 0</span>
+                        </div>
+                        <h2 id="challenge-question" class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                            Chargement du défi...
+                        </h2>
+                        <p id="challenge-hint-sub" class="text-xs sm:text-sm text-slate-600 mt-1">
+                            Ajuste les paramètres du bécher ET complète le modèle particulaire Avant / Après ci-dessous.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button onclick="generateChallenge()" class="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm border border-slate-300 shadow-sm transition flex items-center gap-2">
+                        <i class="ph-bold ph-arrows-clockwise"></i>
+                        <span>Nouveau défi</span>
+                    </button>
+                    <button onclick="verifyChallenge()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition flex items-center gap-2">
+                        <i class="ph-bold ph-check-circle text-lg"></i>
+                        <span>Vérifier ma réponse</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ZONE DE RÉTROACTION PÉDAGOGIQUE -->
+            <div id="challenge-feedback" class="hidden mt-4 p-4 rounded-xl border text-sm sm:text-base font-medium flex items-start gap-3">
+                <i id="feedback-icon" class="ph-fill ph-info text-2xl shrink-0 mt-0.5"></i>
+                <div id="feedback-text" class="leading-relaxed"></div>
+            </div>
+        </div>
+
+        <!-- GRILLE PRINCIPALE : COLONNE GAUCHE (CONTRÔLES + FORMULES) | COLONNE DROITE (BÉCHER + PARTICULES) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- COLONNE GAUCHE : CONTRÔLES ET FORMULES MATHÉMATIQUES (7 colonnes sur grand écran) -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+
+                <!-- PANNEAU DE CONTRÔLES : MODE DISSOLUTION (Aussi utilisé quand le défi est de type dissolution) -->
+                <section id="controls-dissolution" class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                                <i class="ph-bold ph-sliders-horizontal text-lg"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Préparation de la solution (Dissolution)</h3>
+                                <p class="text-xs text-slate-500">Modifie la quantité de soluté ou le volume total de la solution</p>
+                            </div>
+                        </div>
+                        <button onclick="resetDissolution()" class="text-xs font-semibold text-slate-500 hover:text-blue-600 flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition" title="Réinitialiser les valeurs">
+                            <i class="ph-bold ph-arrow-counter-clockwise"></i> Réinitialiser
+                        </button>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Contrôle Masse de soluté (m) -->
+                        <div class="bg-purple-50/60 p-4 rounded-xl border border-purple-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="slider-m" class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-purple-600 inline-block"></span>
+                                    Masse de soluté (<span class="font-mono text-purple-700">m</span>)
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span id="val-m" class="font-mono font-extrabold text-lg sm:text-xl text-purple-700 bg-white px-3 py-1 rounded-lg border border-purple-200 shadow-xs">10 g</span>
+                                </div>
+                            </div>
+                            <input type="range" id="slider-m" class="slider-solute" min="1" max="50" step="1" value="10" oninput="updateDissolution()">
+                            <div class="flex justify-between text-xs font-medium text-slate-400 mt-1.5">
+                                <span>1 g (peu de soluté)</span>
+                                <span>25 g</span>
+                                <span>50 g (très concentré)</span>
+                            </div>
+                        </div>
+
+                        <!-- Contrôle Volume de solution (V) -->
+                        <div class="bg-sky-50/60 p-4 rounded-xl border border-sky-100">
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                                <label for="slider-v" class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-sky-500 inline-block"></span>
+                                    Volume de solution (<span class="font-mono text-sky-700">V</span>)
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span id="val-v-l" class="font-mono font-extrabold text-lg sm:text-xl text-sky-700 bg-white px-3 py-1 rounded-lg border border-sky-200 shadow-xs">0,50 L</span>
+                                    <span id="val-v-ml" class="font-mono font-semibold text-sm text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">(500 mL)</span>
+                                </div>
+                            </div>
+                            <input type="range" id="slider-v" class="slider-solvent" min="0.1" max="2.0" step="0.05" value="0.5" oninput="updateDissolution()">
+                            <div class="flex justify-between text-xs font-medium text-slate-400 mt-1.5">
+                                <span>0,10 L (100 mL)</span>
+                                <span>1,00 L (1000 mL)</span>
+                                <span>2,00 L (2000 mL)</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PANNEAU DE CONTRÔLES : MODE DILUTION (Masqué par défaut) -->
+                <section id="controls-dilution" class="hidden bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+                                <i class="ph-bold ph-drop text-lg"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Paramètres de la dilution</h3>
+                                <p class="text-xs text-slate-500">Ajoute du solvant (eau) à une solution initiale sans ajouter de soluté</p>
+                            </div>
+                        </div>
+                        <button onclick="resetDilution()" class="text-xs font-semibold text-slate-500 hover:text-blue-600 flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition">
+                            <i class="ph-bold ph-arrow-counter-clockwise"></i> Réinitialiser
+                        </button>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Concentration initiale C1 -->
+                            <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="slider-c1" class="font-bold text-slate-800 text-sm">
+                                        Concentration initiale (<span class="font-mono text-indigo-700">C₁</span>)
+                                    </label>
+                                    <span id="val-c1" class="font-mono font-extrabold text-base text-indigo-700 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200">40 g/L</span>
+                                </div>
+                                <input type="range" id="slider-c1" class="slider-solute" min="10" max="80" step="5" value="40" oninput="updateDilution('c1')">
+                                <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+                                    <span>10 g/L</span>
+                                    <span>80 g/L</span>
+                                </div>
+                            </div>
+
+                            <!-- Volume initial V1 -->
+                            <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-100">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="slider-v1" class="font-bold text-slate-800 text-sm">
+                                        Volume initial (<span class="font-mono text-blue-700">V₁</span>)
+                                    </label>
+                                    <div class="text-right">
+                                        <span id="val-v1" class="font-mono font-extrabold text-base text-blue-700 bg-white px-2.5 py-0.5 rounded-lg border border-blue-200">0,25 L</span>
+                                        <span id="val-v1-ml" class="block text-[11px] font-mono text-slate-500 mt-0.5">(250 mL)</span>
+                                    </div>
+                                </div>
+                                <input type="range" id="slider-v1" min="0.1" max="1.0" step="0.05" value="0.25" oninput="updateDilution('v1')">
+                                <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+                                    <span>0,10 L (100 mL)</span>
+                                    <span>1,00 L (1000 mL)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Volume final V2 & Bouton Ajouter de l'eau -->
+                        <div class="bg-sky-50 p-4 rounded-xl border-2 border-sky-200">
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                                <label for="slider-v2" class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                                    <i class="ph-fill ph-drop text-sky-500 text-lg"></i>
+                                    Volume final après ajout d'eau (<span class="font-mono text-sky-700">V₂</span>)
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span id="val-v2" class="font-mono font-extrabold text-lg text-sky-700 bg-white px-3 py-1 rounded-lg border border-sky-200">1,00 L</span>
+                                    <span id="val-v2-ml" class="font-mono font-semibold text-sm text-slate-600 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200">(1000 mL)</span>
+                                </div>
+                            </div>
+                            <input type="range" id="slider-v2" class="slider-solvent" min="0.1" max="2.0" step="0.05" value="1.0" oninput="updateDilution('v2')">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-sky-200/70">
+                                <div class="text-xs sm:text-sm text-slate-700">
+                                    Eau ajoutée : <strong id="val-water-added" class="font-mono text-sky-800 bg-sky-100 px-2 py-0.5 rounded">+ 0,75 L (+ 750 mL)</strong>
+                                </div>
+                                <button onclick="addWaterStep()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5">
+                                    <i class="ph-bold ph-plus-circle text-base"></i>
+                                    <span>Ajouter 100 mL d'eau</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PANNEAU MATHÉMATIQUE & FORMULES EN TEMPS RÉEL (Masqué pendant l'évaluation en Mode Défi pour ne pas donner la réponse !) -->
+                <section id="math-panel" class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                            <i class="ph-bold ph-calculator text-blue-600 text-xl"></i>
+                            <span>Calculs et formules en temps réel</span>
+                        </h3>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-600">Unités SI & PFEQ</span>
+                    </div>
+
+                    <!-- AFFICHAGE FORMULE DISSOLUTION -->
+                    <div id="formula-dissolution-box" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Concentration en g/L -->
+                            <div class="bg-slate-900 text-white rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
+                                <div class="text-xs font-semibold uppercase tracking-wider text-blue-300 mb-2">Concentration massique (g/L)</div>
+                                <div class="font-mono text-sm sm:text-base text-slate-300 flex items-center gap-2 my-1">
+                                    <span>C =</span>
+                                    <span class="inline-flex flex-col items-center text-center leading-tight">
+                                        <span class="border-b border-slate-500 px-2 pb-0.5 text-purple-300" id="calc-m">10 g</span>
+                                        <span class="pt-0.5 text-sky-300" id="calc-v">0,50 L</span>
+                                    </span>
+                                </div>
+                                <div class="mt-3 pt-2 border-t border-slate-800 flex items-baseline justify-between">
+                                    <span class="text-xs text-slate-400">Résultat :</span>
+                                    <span id="res-c-gl" class="font-mono text-xl sm:text-2xl font-extrabold text-emerald-400">20,0 g/L</span>
+                                </div>
+                            </div>
+
+                            <!-- Concentration en % m/V -->
+                            <div class="bg-slate-900 text-white rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
+                                <div class="text-xs font-semibold uppercase tracking-wider text-amber-300 mb-2">Pourcentage masse/volume (% m/V)</div>
+                                <div class="font-mono text-xs sm:text-sm text-slate-300 flex items-center gap-1.5 my-1">
+                                    <span>C =</span>
+                                    <span class="inline-flex flex-col items-center text-center leading-tight">
+                                        <span class="border-b border-slate-500 px-1.5 pb-0.5 text-purple-300" id="calc-m-pct">10 g</span>
+                                        <span class="pt-0.5 text-sky-300" id="calc-v-ml">500 mL</span>
+                                    </span>
+                                    <span>× 100</span>
+                                </div>
+                                <div class="mt-3 pt-2 border-t border-slate-800 flex items-baseline justify-between">
+                                    <span class="text-xs text-slate-400">Équivalent (g / 100 mL) :</span>
+                                    <span id="res-c-pct" class="font-mono text-xl sm:text-2xl font-extrabold text-amber-400">2,0 % m/V</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-3.5 text-xs sm:text-sm text-blue-900 flex items-start gap-2.5">
+                            <i class="ph-fill ph-lightbulb text-blue-600 text-lg shrink-0 mt-0.5"></i>
+                            <p>
+                                <strong>Astuce PFEQ :</strong> Une concentration de <span id="tip-gl" class="font-mono font-bold">20,0 g/L</span> correspond toujours à <span id="tip-pct" class="font-mono font-bold">2,0 g</span> de soluté dans <span class="font-mono font-bold">100 mL</span> de solution (soit 10 fois moins que dans 1000 mL).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- AFFICHAGE FORMULE DILUTION -->
+                    <div id="formula-dilution-box" class="hidden space-y-4">
+                        <div class="bg-slate-900 text-white rounded-xl p-4 sm:p-5">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-sky-300">Équation de la dilution : C₁ · V₁ = C₂ · V₂</span>
+                                <span class="text-xs font-mono bg-slate-800 text-purple-300 px-2.5 py-1 rounded-md border border-slate-700">
+                                    Masse de soluté constante : <strong id="dilution-mass-const">10,0 g</strong>
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-11 items-center gap-3 text-center font-mono my-2">
+                                <!-- Avant -->
+                                <div class="md:col-span-5 bg-slate-800/90 p-3 rounded-lg border border-slate-700">
+                                    <div class="text-[11px] text-slate-400 uppercase mb-1">Solution initiale (Avant)</div>
+                                    <div class="text-sm sm:text-base font-bold text-indigo-300">
+                                        <span id="eq-c1">40 g/L</span> × <span id="eq-v1">0,25 L</span>
+                                    </div>
+                                    <div class="text-xs text-purple-300 mt-1">= <span id="eq-m1">10,0 g</span> de soluté</div>
+                                </div>
+
+                                <div class="md:col-span-1 text-xl font-extrabold text-slate-400">=</div>
+
+                                <!-- Après -->
+                                <div class="md:col-span-5 bg-slate-800/90 p-3 rounded-lg border border-slate-700">
+                                    <div class="text-[11px] text-slate-400 uppercase mb-1">Solution diluée (Après)</div>
+                                    <div class="text-sm sm:text-base font-bold text-emerald-400">
+                                        <span id="eq-c2">10,0 g/L</span> × <span id="eq-v2">1,00 L</span>
+                                    </div>
+                                    <div class="text-xs text-purple-300 mt-1">= <span id="eq-m2">10,0 g</span> de soluté</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                                <div class="text-xs sm:text-sm text-slate-300">
+                                    Nouvelle concentration (<span class="font-mono font-bold text-white">C₂</span>) :
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span id="res-c2-gl" class="font-mono text-xl sm:text-2xl font-extrabold text-emerald-400">10,0 g/L</span>
+                                    <span id="res-c2-pct" class="font-mono text-sm font-bold text-amber-300 bg-slate-800 px-2.5 py-1 rounded-lg">(1,0 % m/V)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-purple-50 border border-purple-100 rounded-xl p-3.5 text-xs sm:text-sm text-purple-900 flex items-start gap-2.5">
+                            <i class="ph-fill ph-atom text-purple-600 text-lg shrink-0 mt-0.5"></i>
+                            <p>
+                                <strong>Conservation de la matière :</strong> Lorsqu'on ajoute de l'eau (solvant), le volume augmente mais <strong>le nombre de particules de soluté ne change pas</strong> (<span id="tip-mass-dilution" class="font-mono font-bold">10,0 g</span>). Les particules sont simplement plus espacées !
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MINI-OUTIL INTERACTIF DE DESSIN PARTICULAIRE (Visible uniquement en Mode Défi) -->
+                <section id="particle-builder-section" class="hidden bg-white rounded-2xl border-2 border-indigo-200 p-5 sm:p-6 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Étape 2 • Modèle particulaire microscopique</span>
+                            <h3 class="font-bold text-slate-900 text-base sm:text-lg">Représente les particules de soluté (Avant / Après)</h3>
+                        </div>
+                        <span class="text-xs font-semibold bg-indigo-50 text-indigo-800 px-3 py-1 rounded-full border border-indigo-200">
+                            Échelle : 1 bille = 2 g de soluté
+                        </span>
+                    </div>
+                    <p id="builder-instruction" class="text-xs sm:text-sm text-slate-600 mb-4">
+                        Clique dans chaque bécher pour ajouter des particules de soluté (ou utilise les boutons + / -). Montre ce qui arrive aux particules entre l'état initial et l'état final !
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Bécher AVANT -->
+                        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex flex-col items-center">
+                            <div class="w-full flex justify-between items-center mb-2">
+                                <span class="font-bold text-xs uppercase tracking-wider text-slate-700 bg-white px-2.5 py-1 rounded-md border border-slate-200">1. Avant</span>
+                                <span id="builder-count-before" class="font-mono text-xs font-bold text-purple-700">0 particule (0 g)</span>
+                            </div>
+                            <div id="beaker-box-before" onclick="handleBuilderClick('before', event)" class="relative w-36 h-40 border-x-4 border-b-4 border-slate-400 rounded-b-2xl bg-white cursor-pointer overflow-hidden shadow-inner group select-none" title="Clique pour ajouter une particule">
+                                <!-- Niveau liquide simulé -->
+                                <div id="builder-liquid-before" class="absolute bottom-0 left-0 right-0 bg-blue-200/60 transition-all duration-300" style="height: 50%;"></div>
+                                <!-- Conteneur des particules -->
+                                <div id="builder-particles-before" class="absolute inset-0"></div>
+                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                                    <span class="bg-slate-900/75 text-white text-[10px] font-semibold px-2 py-1 rounded-full">+ Cliquer</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="button" onclick="adjustBuilderParticles('before', -1)" class="w-8 h-8 rounded-lg bg-white hover:bg-red-50 text-slate-700 hover:text-red-600 border border-slate-300 font-bold flex items-center justify-center transition" title="Retirer une particule">
+                                    <i class="ph-bold ph-minus"></i>
+                                </button>
+                                <button type="button" onclick="clearBuilderParticles('before')" class="px-2.5 h-8 rounded-lg bg-white hover:bg-slate-100 text-slate-500 border border-slate-300 text-xs font-semibold transition">
+                                    Vider
+                                </button>
+                                <button type="button" onclick="adjustBuilderParticles('before', 1)" class="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center justify-center transition" title="Ajouter une particule">
+                                    <i class="ph-bold ph-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bécher APRÈS -->
+                        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex flex-col items-center">
+                            <div class="w-full flex justify-between items-center mb-2">
+                                <span class="font-bold text-xs uppercase tracking-wider text-slate-700 bg-white px-2.5 py-1 rounded-md border border-slate-200">2. Après</span>
+                                <span id="builder-count-after" class="font-mono text-xs font-bold text-purple-700">0 particule (0 g)</span>
+                            </div>
+                            <div id="beaker-box-after" onclick="handleBuilderClick('after', event)" class="relative w-36 h-40 border-x-4 border-b-4 border-slate-400 rounded-b-2xl bg-white cursor-pointer overflow-hidden shadow-inner group select-none" title="Clique pour ajouter une particule">
+                                <!-- Niveau liquide simulé -->
+                                <div id="builder-liquid-after" class="absolute bottom-0 left-0 right-0 bg-blue-300/60 transition-all duration-300" style="height: 75%;"></div>
+                                <!-- Conteneur des particules -->
+                                <div id="builder-particles-after" class="absolute inset-0"></div>
+                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                                    <span class="bg-slate-900/75 text-white text-[10px] font-semibold px-2 py-1 rounded-full">+ Cliquer</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="button" onclick="adjustBuilderParticles('after', -1)" class="w-8 h-8 rounded-lg bg-white hover:bg-red-50 text-slate-700 hover:text-red-600 border border-slate-300 font-bold flex items-center justify-center transition" title="Retirer une particule">
+                                    <i class="ph-bold ph-minus"></i>
+                                </button>
+                                <button type="button" onclick="clearBuilderParticles('after')" class="px-2.5 h-8 rounded-lg bg-white hover:bg-slate-100 text-slate-500 border border-slate-300 text-xs font-semibold transition">
+                                    Vider
+                                </button>
+                                <button type="button" onclick="adjustBuilderParticles('after', 1)" class="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center justify-center transition" title="Ajouter une particule">
+                                    <i class="ph-bold ph-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- COLONNE DROITE : VISUALISATION DYNAMIQUE DU BÉCHER & MODÈLE PARTICULAIRE (5 colonnes) -->
+            <div class="lg:col-span-5 lg:sticky lg:top-24">
+                <section class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col items-center">
+                    <div class="w-full flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                                <i class="ph-bold ph-eye text-indigo-600"></i>
+                                <span>Modèle particulaire</span>
+                            </h3>
+                            <p class="text-xs text-slate-500">Agitation thermique et espacement des particules</p>
+                        </div>
+                        <span id="badge-particle-count" class="font-mono text-xs font-bold bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200">
+                            20 particules
+                        </span>
+                    </div>
+
+                    <!-- CONTENEUR DU CANVAS HTML5 -->
+                    <div id="canvas-container" class="w-full relative rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center" style="height: 390px;">
+                        <canvas id="beakerCanvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <!-- LÉGENDE VISUELLE -->
+                    <div class="w-full mt-4 pt-3.5 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
+                        <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                            <span class="w-3.5 h-3.5 rounded-full bg-purple-600 border-2 border-white shadow-xs shrink-0"></span>
+                            <div>
+                                <div class="font-bold text-slate-800">Particule de soluté</div>
+                                <div class="text-[11px] text-slate-500">1 bille = 0,5 g de soluté</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                            <span id="legend-color-swatch" class="w-3.5 h-3.5 rounded-md bg-blue-500 border border-blue-700 shrink-0"></span>
+                            <div>
+                                <div class="font-bold text-slate-800">Intensité de couleur</div>
+                                <div class="text-[11px] text-slate-500">Proportionnelle à C (g/L)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INDICATEUR D'ÉTAT DE LA SOLUTION -->
+                    <div id="solution-status-bar" class="w-full mt-3 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-100 text-xs sm:text-sm text-blue-900 flex items-center justify-between">
+                        <span class="font-semibold">État actuel :</span>
+                        <span id="solution-status-text" class="font-bold">Solution moyennement concentrée</span>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- PIED DE PAGE PÉDAGOGIQUE -->
+    <footer class="bg-white border-t border-slate-200 mt-10 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4">
+            Ressource pédagogique interactive • Science et technologie (ST / ATS) — 3e secondaire (Québec)
+        </div>
+    </footer>
+
+    <!-- LOGIQUE JAVASCRIPT COMPLÈTE -->
+    <script>
+        /**
+         * ÉTAT GLOBAL DE L'APPLICATION
+         */
+        const state = {
+            mode: 'dissolution', // 'dissolution' | 'dilution' | 'defi'
+            // Paramètres Mode 1 : Dissolution
+            dissolution: {
+                m: 10,      // masse en g (1 à 50)
+                v: 0.50     // volume en L (0.10 à 2.00)
+            },
+            // Paramètres Mode 2 : Dilution
+            dilution: {
+                c1: 40,     // concentration initiale en g/L (10 à 80)
+                v1: 0.25,   // volume initial en L (0.10 à 1.00)
+                v2: 1.00    // volume final en L (v1 à 2.00)
+            },
+            // Paramètres Mode 3 : Défi interactif
+            challenge: {
+                active: false,
+                type: 'dissolution', // 'dissolution' ou 'dilution'
+                score: 0,
+                questionText: '',
+                targetM: 10,
+                targetV: 0.5,
+                targetC: 20,
+                // Pour défi dilution
+                initC1: 40,
+                initV1: 0.25,
+                targetV2: 1.0,
+                targetC2: 10,
+                // État de l'atelier particulaire Avant / Après (1 bille = 2 g)
+                builderBefore: [], // tableau de coordonnées {x, y} en %
+                builderAfter: [],
+                expectedParticlesBefore: 0,
+                expectedParticlesAfter: 0
+            },
+            // Simulation des particules dans le grand bécher Canvas
+            particles: [],
+            visual: {
+                volumeL: 0.5,       // volume affiché (0 à 2.0 L)
+                massG: 10,          // masse affichée (détermine le nb de billes)
+                concentration: 20   // concentration affichée (détermine l'opacité/teinte)
+            }
+        };
+
+        // Formatage des nombres avec virgule française
+        function formatFr(num, decimals = 1) {
+            return num.toFixed(decimals).replace('.', ',');
+        }
+
+        /**
+         * GESTION DES ONGLETS ET CHANGEMENT DE MODE
+         */
+        function switchMode(newMode) {
+            state.mode = newMode;
+
+            // Mise à jour visuelle des boutons d'onglets
+            const tabs = ['dissolution', 'dilution', 'defi'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === newMode) {
+                    btn.className = "tab-btn flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all bg-white text-blue-700 shadow-sm";
+                } else {
+                    btn.className = "tab-btn flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all";
+                }
+            });
+
+            const challengeBanner = document.getElementById('challenge-banner');
+            const controlsDissolution = document.getElementById('controls-dissolution');
+            const controlsDilution = document.getElementById('controls-dilution');
+            const mathPanel = document.getElementById('math-panel');
+            const formulaDissolution = document.getElementById('formula-dissolution-box');
+            const formulaDilution = document.getElementById('formula-dilution-box');
+            const builderSection = document.getElementById('particle-builder-section');
+
+            if (newMode === 'dissolution') {
+                challengeBanner.classList.add('hidden');
+                builderSection.classList.add('hidden');
+                mathPanel.classList.remove('hidden');
+                controlsDissolution.classList.remove('hidden');
+                controlsDilution.classList.add('hidden');
+                formulaDissolution.classList.remove('hidden');
+                formulaDilution.classList.add('hidden');
+                updateDissolution();
+            } else if (newMode === 'dilution') {
+                challengeBanner.classList.add('hidden');
+                builderSection.classList.add('hidden');
+                mathPanel.classList.remove('hidden');
+                controlsDissolution.classList.add('hidden');
+                controlsDilution.classList.remove('hidden');
+                formulaDissolution.classList.add('hidden');
+                formulaDilution.classList.remove('hidden');
+                updateDilution('init');
+            } else if (newMode === 'defi') {
+                challengeBanner.classList.remove('hidden');
+                builderSection.classList.remove('hidden');
+                // En mode défi, on masque les calculs automatiques pour laisser l'élève réfléchir
+                mathPanel.classList.add('hidden');
+                generateChallenge();
+            }
+        }
+
+        /**
+         * MODE 1 : LOGIQUE DE DISSOLUTION (C = m / V)
+         */
+        function updateDissolution() {
+            const m = parseFloat(document.getElementById('slider-m').value);
+            const v = parseFloat(document.getElementById('slider-v').value);
+
+            state.dissolution.m = m;
+            state.dissolution.v = v;
+
+            const vMl = Math.round(v * 1000);
+            const cGL = m / v;                 // g/L
+            const cPct = (m / vMl) * 100;      // % m/V (g par 100 mL)
+
+            // Mise à jour des étiquettes de curseurs
+            document.getElementById('val-m').textContent = `${m} g`;
+            document.getElementById('val-v-l').textContent = `${formatFr(v, 2)} L`;
+            document.getElementById('val-v-ml').textContent = `(${vMl} mL)`;
+
+            // Mise à jour des formules mathématiques
+            document.getElementById('calc-m').textContent = `${m} g`;
+            document.getElementById('calc-v').textContent = `${formatFr(v, 2)} L`;
+            document.getElementById('res-c-gl').textContent = `${formatFr(cGL, 1)} g/L`;
+
+            document.getElementById('calc-m-pct').textContent = `${m} g`;
+            document.getElementById('calc-v-ml').textContent = `${vMl} mL`;
+            document.getElementById('res-c-pct').textContent = `${formatFr(cPct, 2)} % m/V`;
+
+            document.getElementById('tip-gl').textContent = `${formatFr(cGL, 1)} g/L`;
+            document.getElementById('tip-pct').textContent = `${formatFr(cPct, 2)} g`;
+
+            // Synchronisation avec le visualiseur graphique
+            syncVisualState(v, m, cGL);
+        }
+
+        function resetDissolution() {
+            document.getElementById('slider-m').value = 10;
+            document.getElementById('slider-v').value = 0.5;
+            updateDissolution();
+        }
+
+        /**
+         * MODE 2 : LOGIQUE DE DILUTION (C1 * V1 = C2 * V2)
+         */
+        function updateDilution(source) {
+            let c1 = parseFloat(document.getElementById('slider-c1').value);
+            let v1 = parseFloat(document.getElementById('slider-v1').value);
+            let v2 = parseFloat(document.getElementById('slider-v2').value);
+
+            // Contrainte physique : le volume final V2 ne peut pas être inférieur au volume initial V1
+            const sliderV2 = document.getElementById('slider-v2');
+            sliderV2.min = v1.toFixed(2);
+            if (v2 < v1) {
+                v2 = v1;
+                sliderV2.value = v2.toFixed(2);
+            }
+
+            state.dilution.c1 = c1;
+            state.dilution.v1 = v1;
+            state.dilution.v2 = v2;
+
+            // Calculs scientifiques
+            const massSolute = c1 * v1; // Masse en grammes (constante !)
+            const c2 = massSolute / v2; // Nouvelle concentration en g/L
+            const c2Pct = c2 / 10;      // % m/V
+            const waterAddedL = Math.max(0, v2 - v1);
+            const waterAddedMl = Math.round(waterAddedL * 1000);
+
+            // Mise à jour des étiquettes de curseurs
+            document.getElementById('val-c1').textContent = `${c1} g/L`;
+            document.getElementById('val-v1').textContent = `${formatFr(v1, 2)} L`;
+            document.getElementById('val-v1-ml').textContent = `(${Math.round(v1 * 1000)} mL)`;
+
+            document.getElementById('val-v2').textContent = `${formatFr(v2, 2)} L`;
+            document.getElementById('val-v2-ml').textContent = `(${Math.round(v2 * 1000)} mL)`;
+            document.getElementById('val-water-added').textContent = `+ ${formatFr(waterAddedL, 2)} L (+ ${waterAddedMl} mL)`;
+
+            // Mise à jour de l'équation C1 * V1 = C2 * V2
+            document.getElementById('dilution-mass-const').textContent = `${formatFr(massSolute, 1)} g`;
+            document.getElementById('eq-c1').textContent = `${c1} g/L`;
+            document.getElementById('eq-v1').textContent = `${formatFr(v1, 2)} L`;
+            document.getElementById('eq-m1').textContent = `${formatFr(massSolute, 1)} g`;
+
+            document.getElementById('eq-c2').textContent = `${formatFr(c2, 1)} g/L`;
+            document.getElementById('eq-v2').textContent = `${formatFr(v2, 2)} L`;
+            document.getElementById('eq-m2').textContent = `${formatFr(massSolute, 1)} g`;
+
+            document.getElementById('res-c2-gl').textContent = `${formatFr(c2, 1)} g/L`;
+            document.getElementById('res-c2-pct').textContent = `(${formatFr(c2Pct, 2)} % m/V)`;
+            document.getElementById('tip-mass-dilution').textContent = `${formatFr(massSolute, 1)} g`;
+
+            // Synchronisation avec le visualiseur graphique
+            syncVisualState(v2, massSolute, c2);
+        }
+
+        function addWaterStep() {
+            const sliderV2 = document.getElementById('slider-v2');
+            let currentV2 = parseFloat(sliderV2.value);
+            if (currentV2 < 2.0) {
+                currentV2 = Math.min(2.0, Math.round((currentV2 + 0.1) * 100) / 100);
+                sliderV2.value = currentV2.toFixed(2);
+                updateDilution('v2');
+            }
+        }
+
+        function resetDilution() {
+            document.getElementById('slider-c1').value = 40;
+            document.getElementById('slider-v1').value = 0.25;
+            document.getElementById('slider-v2').min = 0.25;
+            document.getElementById('slider-v2').value = 1.00;
+            updateDilution('init');
+        }
+
+        /**
+         * MODE 3 : GÉNÉRATEUR DE DÉFIS INTERACTIFS & ÉVALUATION PÉDAGOGIQUE
+         */
+        const challengeBank = [
+            // Défis de dissolution (m en g, v en L -> multiples de 2g pour l'échelle 1 bille = 2g)
+            {
+                type: 'dissolution',
+                question: "Prépare une solution aqueuse de 500 mL ayant une concentration de 20 g/L.",
+                targetM: 10,
+                targetV: 0.50,
+                targetC: 20,
+                particlesBefore: 0, // Solvant pur au départ
+                particlesAfter: 5   // 10 g / 2 g par bille = 5 billes
+            },
+            {
+                type: 'dissolution',
+                question: "Prépare 1,5 L d'une solution saline dont la concentration est de 12 g/L.",
+                targetM: 18,
+                targetV: 1.50,
+                targetC: 12,
+                particlesBefore: 0,
+                particlesAfter: 9   // 18 g / 2 g = 9 billes
+            },
+            {
+                type: 'dissolution',
+                question: "Prépare une solution de 400 mL à 3 % m/V (indice : 3 % m/V = 30 g/L).",
+                targetM: 12,
+                targetV: 0.40,
+                targetC: 30,
+                particlesBefore: 0,
+                particlesAfter: 6   // 12 g / 2 g = 6 billes
+            },
+            {
+                type: 'dissolution',
+                question: "Dissous la bonne masse de soluté dans 800 mL de solution pour obtenir 25 g/L.",
+                targetM: 20,
+                targetV: 0.80,
+                targetC: 25,
+                particlesBefore: 0,
+                particlesAfter: 10  // 20 g / 2 g = 10 billes
+            },
+            // Défis de dilution (C1 * V1 = m constant, multiple de 2g)
+            {
+                type: 'dilution',
+                question: "Dilue 250 mL d'une solution initiale à 40 g/L pour obtenir une concentration finale de 10 g/L.",
+                initC1: 40,
+                initV1: 0.25, // m = 10 g
+                targetV2: 1.00,
+                targetC2: 10,
+                particlesBefore: 5, // 10 g / 2 g = 5 billes
+                particlesAfter: 5   // Conservation de la matière : toujours 5 billes !
+            },
+            {
+                type: 'dilution',
+                question: "Tu disposes de 300 mL d'une solution concentrée à 60 g/L. Ajoute de l'eau pour abaisser sa concentration à 20 g/L.",
+                initC1: 60,
+                initV1: 0.30, // m = 18 g
+                targetV2: 0.90,
+                targetC2: 20,
+                particlesBefore: 9, // 18 g / 2 g = 9 billes
+                particlesAfter: 9   // Toujours 9 billes !
+            },
+            {
+                type: 'dilution',
+                question: "Dilue 400 mL d'une solution à 30 g/L jusqu'à atteindre une concentration finale de 8 g/L.",
+                initC1: 30,
+                initV1: 0.40, // m = 12 g
+                targetV2: 1.50,
+                targetC2: 8,
+                particlesBefore: 6, // 12 g / 2 g = 6 billes
+                particlesAfter: 6   // Toujours 6 billes !
+            },
+            {
+                type: 'dilution',
+                question: "À partir de 200 mL d'une solution mère à 80 g/L, prépare une solution diluée à 16 g/L.",
+                initC1: 80,
+                initV1: 0.20, // m = 16 g
+                targetV2: 1.00,
+                targetC2: 16,
+                particlesBefore: 8, // 16 g / 2 g = 8 billes
+                particlesAfter: 8   // Toujours 8 billes !
+            }
+        ];
+
+        let lastChallengeIndex = -1;
+
+        function generateChallenge() {
+            // Choisir un défi différent du précédent
+            let idx;
+            do {
+                idx = Math.floor(Math.random() * challengeBank.length);
+            } while (idx === lastChallengeIndex && challengeBank.length > 1);
+            lastChallengeIndex = idx;
+
+            const ch = challengeBank[idx];
+            state.challenge.active = true;
+            state.challenge.type = ch.type;
+            state.challenge.questionText = ch.question;
+            state.challenge.expectedParticlesBefore = ch.particlesBefore;
+            state.challenge.expectedParticlesAfter = ch.particlesAfter;
+
+            // Masquer le bandeau de rétroaction précédent
+            const fb = document.getElementById('challenge-feedback');
+            fb.classList.add('hidden');
+
+            // Mise à jour de l'interface du bandeau
+            document.getElementById('challenge-question').textContent = ch.question;
+            const badge = document.getElementById('challenge-type-badge');
+            const controlsDissolution = document.getElementById('controls-dissolution');
+            const controlsDilution = document.getElementById('controls-dilution');
+
+            if (ch.type === 'dissolution') {
+                state.challenge.targetM = ch.targetM;
+                state.challenge.targetV = ch.targetV;
+                state.challenge.targetC = ch.targetC;
+
+                badge.textContent = "Défi • Dissolution";
+                badge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-200 text-purple-900";
+
+                controlsDissolution.classList.remove('hidden');
+                controlsDilution.classList.add('hidden');
+
+                // Valeurs de départ neutres pour l'élève
+                document.getElementById('slider-m').value = 4;
+                document.getElementById('slider-v').value = 1.00;
+                updateDissolution();
+
+                // Niveaux liquides dans les mini-béchers Avant / Après
+                document.getElementById('builder-liquid-before').style.height = '55%';
+                document.getElementById('builder-liquid-after').style.height = '55%';
+                document.getElementById('builder-instruction').innerHTML =
+                    "<strong>Dissolution :</strong> Au départ (<em>Avant</em>), on a de l'eau pure (0 g de soluté). Après dissolution (<em>Après</em>), clique pour ajouter le bon nombre de particules de soluté (<strong>1 bille = 2 g</strong>).";
+            } else {
+                state.challenge.initC1 = ch.initC1;
+                state.challenge.initV1 = ch.initV1;
+                state.challenge.targetV2 = ch.targetV2;
+                state.challenge.targetC2 = ch.targetC2;
+
+                badge.textContent = "Défi • Dilution";
+                badge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-200 text-sky-900";
+
+                controlsDissolution.classList.add('hidden');
+                controlsDilution.classList.remove('hidden');
+
+                // Pré-remplir C1 et V1 selon l'énoncé, et laisser V2 au minimum pour que l'élève ajoute l'eau
+                document.getElementById('slider-c1').value = ch.initC1;
+                document.getElementById('slider-v1').value = ch.initV1.toFixed(2);
+                document.getElementById('slider-v2').min = ch.initV1.toFixed(2);
+                document.getElementById('slider-v2').value = ch.initV1.toFixed(2);
+                updateDilution('init');
+
+                // Niveaux liquides dans les mini-béchers Avant / Après (le niveau monte après dilution)
+                document.getElementById('builder-liquid-before').style.height = '35%';
+                document.getElementById('builder-liquid-after').style.height = '80%';
+                document.getElementById('builder-instruction').innerHTML =
+                    "<strong>Dilution :</strong> Représente les particules de soluté dans la solution initiale (<em>Avant</em>) et dans la solution diluée (<em>Après</em>). Rappel : <strong>1 bille = 2 g de soluté</strong>.";
+            }
+
+            // Réinitialiser l'atelier particulaire Avant / Après
+            state.challenge.builderBefore = [];
+            state.challenge.builderAfter = [];
+            renderBuilderParticles('before');
+            renderBuilderParticles('after');
+        }
+
+        /**
+         * GESTION DE L'ATELIER PARTICULAIRE AVANT / APRÈS (MODE DÉFI)
+         */
+        function handleBuilderClick(which, event) {
+            const box = document.getElementById(`beaker-box-${which}`);
+            const rect = box.getBoundingClientRect();
+            const relX = ((event.clientX - rect.left) / rect.width) * 100;
+            const relY = ((event.clientY - rect.top) / rect.height) * 100;
+
+            const list = which === 'before' ? state.challenge.builderBefore : state.challenge.builderAfter;
+            if (list.length >= 25) return; // Limite maximale raisonnable
+
+            // Garder la particule dans la zone liquide du bécher
+            const minTop = which === 'before' && state.challenge.type === 'dilution' ? 68 : (which === 'after' && state.challenge.type === 'dilution' ? 24 : 48);
+            const clampedX = Math.max(12, Math.min(88, relX));
+            const clampedY = Math.max(minTop, Math.min(90, relY));
+
+            list.push({ x: clampedX, y: clampedY });
+            renderBuilderParticles(which);
+        }
+
+        function adjustBuilderParticles(which, delta) {
+            const list = which === 'before' ? state.challenge.builderBefore : state.challenge.builderAfter;
+            if (delta > 0 && list.length < 25) {
+                const minTop = which === 'before' && state.challenge.type === 'dilution' ? 68 : (which === 'after' && state.challenge.type === 'dilution' ? 24 : 48);
+                list.push({
+                    x: 15 + Math.random() * 70,
+                    y: minTop + Math.random() * (90 - minTop)
+                });
+            } else if (delta < 0 && list.length > 0) {
+                list.pop();
+            }
+            renderBuilderParticles(which);
+        }
+
+        function clearBuilderParticles(which) {
+            if (which === 'before') state.challenge.builderBefore = [];
+            else state.challenge.builderAfter = [];
+            renderBuilderParticles(which);
+        }
+
+        function renderBuilderParticles(which) {
+            const list = which === 'before' ? state.challenge.builderBefore : state.challenge.builderAfter;
+            const container = document.getElementById(`builder-particles-${which}`);
+            const counter = document.getElementById(`builder-count-${which}`);
+
+            container.innerHTML = '';
+            list.forEach(pt => {
+                const dot = document.createElement('div');
+                dot.className = 'absolute w-3.5 h-3.5 rounded-full bg-purple-600 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 transition-transform';
+                dot.style.left = `${pt.x}%`;
+                dot.style.top = `${pt.y}%`;
+                container.appendChild(dot);
+            });
+
+            const count = list.length;
+            const grams = count * 2;
+            counter.textContent = `${count} particule${count > 1 ? 's' : ''} (${grams} g)`;
+        }
+
+        /**
+         * VÉRIFICATION DE LA RÉPONSE DE L'ÉLÈVE AVEC RÉTROACTION BIENVEILLANTE
+         */
+        function verifyChallenge() {
+            const ch = state.challenge;
+            const errors = [];
+
+            if (ch.type === 'dissolution') {
+                const userM = state.dissolution.m;
+                const userV = state.dissolution.v;
+                const userC = userM / userV;
+
+                // 1. Vérification du volume (souvent source d'erreur de conversion mL -> L)
+                if (Math.abs(userV - ch.targetV) > 0.01) {
+                    if (Math.abs(userV * 10 - ch.targetV) < 0.02 || Math.abs(userV / 10 - ch.targetV) < 0.02) {
+                        errors.push(`Attention aux conversions de mL en L ! Le volume demandé correspond à <strong>${formatFr(ch.targetV, 2)} L</strong> (${Math.round(ch.targetV * 1000)} mL), alors que tu as réglé le bécher à ${formatFr(userV, 2)} L.`);
+                    } else {
+                        errors.push(`Le volume de la solution n'est pas exact : tu as mis <strong>${formatFr(userV, 2)} L</strong> (${Math.round(userV * 1000)} mL) au lieu de <strong>${formatFr(ch.targetV, 2)} L</strong> (${Math.round(ch.targetV * 1000)} mL).`);
+                    }
+                }
+
+                // 2. Vérification de la masse de soluté
+                if (Math.abs(userM - ch.targetM) > 0.5) {
+                    if (userM > ch.targetM) {
+                        errors.push(`Tu as mis trop de soluté (<strong>${userM} g</strong>), ce qui rend la solution trop concentrée (${formatFr(userC, 1)} g/L au lieu de ${ch.targetC} g/L). Utilise la formule <em>m = C × V</em>.`);
+                    } else {
+                        errors.push(`Tu n'as pas mis assez de soluté (<strong>${userM} g</strong>), ce qui rend la solution trop diluée (${formatFr(userC, 1)} g/L au lieu de ${ch.targetC} g/L). Calcule <em>m = C × V</em>.`);
+                    }
+                }
+            } else {
+                // Défi de dilution
+                const userC1 = state.dilution.c1;
+                const userV1 = state.dilution.v1;
+                const userV2 = state.dilution.v2;
+                const userC2 = (userC1 * userV1) / userV2;
+
+                if (Math.abs(userC1 - ch.initC1) > 0.5 || Math.abs(userV1 - ch.initV1) > 0.01) {
+                    errors.push(`Assure-toi de conserver les valeurs initiales de l'énoncé : <strong>C₁ = ${ch.initC1} g/L</strong> et <strong>V₁ = ${formatFr(ch.initV1, 2)} L</strong> (${Math.round(ch.initV1 * 1000)} mL).`);
+                }
+
+                if (Math.abs(userV2 - ch.targetV2) > 0.01) {
+                    if (userV2 < ch.targetV2) {
+                        errors.push(`Tu n'as pas ajouté assez d'eau ! Ta concentration actuelle est encore trop élevée (<strong>${formatFr(userC2, 1)} g/L</strong> au lieu de <strong>${ch.targetC2} g/L</strong>). Isole <em>V₂ = (C₁ · V₁) / C₂</em>.`);
+                    } else {
+                        errors.push(`Tu as ajouté trop d'eau ! Ta solution est maintenant trop diluée (<strong>${formatFr(userC2, 1)} g/L</strong> au lieu de <strong>${ch.targetC2} g/L</strong>).`);
+                    }
+                }
+            }
+
+            // 3. Vérification du modèle particulaire Avant / Après
+            const countBefore = ch.builderBefore.length;
+            const countAfter = ch.builderAfter.length;
+
+            if (countBefore !== ch.expectedParticlesBefore || countAfter !== ch.expectedParticlesAfter) {
+                if (ch.type === 'dissolution') {
+                    errors.push(`Vérifie ton schéma particulaire (1 bille = 2 g) : avant la dissolution (solvant pur), il doit y avoir <strong>${ch.expectedParticlesBefore} particule</strong>, et après avoir dissous ${ch.targetM} g de soluté, il doit y avoir <strong>${ch.expectedParticlesAfter} particules</strong> (tu en as mis ${countBefore} avant et ${countAfter} après).`);
+                } else {
+                    if (countBefore !== countAfter) {
+                        errors.push(`Dans ton modèle particulaire, le nombre de particules a changé entre Avant (${countBefore}) et Après (${countAfter}). N'oublie pas : lors d'une <strong>dilution</strong>, on ajoute seulement de l'eau, donc le nombre de particules de soluté reste <strong>identique</strong> (${ch.expectedParticlesBefore} billes avant et ${ch.expectedParticlesAfter} billes après) !`);
+                    } else {
+                        errors.push(`Le nombre de particules est bien conservé entre Avant et Après, mais vérifie la masse initiale : <em>m = C₁ × V₁ = ${ch.expectedParticlesBefore * 2} g</em>, ce qui correspond à <strong>${ch.expectedParticlesBefore} particules</strong> (à raison de 2 g par bille).`);
+                    }
+                }
+            }
+
+            // Affichage de la rétroaction
+            const fb = document.getElementById('challenge-feedback');
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbText = document.getElementById('feedback-text');
+            fb.classList.remove('hidden');
+
+            if (errors.length === 0) {
+                state.challenge.score += 1;
+                document.getElementById('challenge-score').textContent = `Défis réussis : ${state.challenge.score}`;
+                fb.className = "mt-4 p-4 rounded-xl border-2 border-emerald-300 bg-emerald-50 text-emerald-950 text-sm sm:text-base flex items-start gap-3";
+                fbIcon.className = "ph-fill ph-check-circle text-emerald-600 text-2xl shrink-0 mt-0.5";
+                fbText.innerHTML = `<strong>Bravo, mission accomplie !</strong> Tes calculs macroscopiques et ta représentation microscopique (modèle particulaire) sont tout à fait exacts. Clique sur <em>« Nouveau défi »</em> pour continuer à t'entraîner !`;
+            } else {
+                fb.className = "mt-4 p-4 rounded-xl border-2 border-rose-200 bg-rose-50 text-rose-950 text-sm sm:text-base flex items-start gap-3";
+                fbIcon.className = "ph-fill ph-warning-circle text-rose-600 text-2xl shrink-0 mt-0.5";
+                fbText.innerHTML = `<div class="font-bold mb-1">Presque ! Voici quelques indices pour corriger ton essai :</div><ul class="list-disc pl-5 space-y-1 text-xs sm:text-sm">${errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+            }
+        }
+
+        /**
+         * MOTEUR DE VISUALISATION HTML5 CANVAS (BÉCHER GRADUÉ + PARTICULES EN AGITATION THERMIQUE)
+         */
+        const canvas = document.getElementById('beakerCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function syncVisualState(volumeL, massG, concentration) {
+            state.visual.volumeL = volumeL;
+            state.visual.massG = massG;
+            state.visual.concentration = concentration;
+
+            // 1 bille dans le grand bécher = 0,5 g de soluté (soit 2 billes par gramme, max ~100 billes)
+            const targetParticleCount = Math.max(1, Math.round(massG * 2));
+            document.getElementById('badge-particle-count').textContent = `${targetParticleCount} particule${targetParticleCount > 1 ? 's' : ''}`;
+
+            adjustCanvasParticles(targetParticleCount);
+            updateStatusText(concentration);
+        }
+
+        function updateStatusText(conc) {
+            const statusText = document.getElementById('solution-status-text');
+            const swatch = document.getElementById('legend-color-swatch');
+
+            // Calcul d'intensité visuelle de la couleur
+            const ratio = Math.min(1, Math.max(0.05, conc / 80));
+            const alpha = 0.15 + ratio * 0.75;
+            swatch.style.backgroundColor = `rgba(37, 99, 235, ${alpha.toFixed(2)})`;
+
+            if (conc < 10) {
+                statusText.textContent = "Solution très diluée (pâle)";
+            } else if (conc < 25) {
+                statusText.textContent = "Solution légèrement concentrée";
+            } else if (conc < 50) {
+                statusText.textContent = "Solution moyennement concentrée";
+            } else {
+                statusText.textContent = "Solution très concentrée (foncée)";
+            }
+        }
+
+        function adjustCanvasParticles(targetCount) {
+            const currentCount = state.particles.length;
+            if (targetCount > currentCount) {
+                for (let i = currentCount; i < targetCount; i++) {
+                    state.particles.push({
+                        // Coordonnées normalisées [0, 1] à l'intérieur du volume liquide
+                        nx: 0.08 + Math.random() * 0.84,
+                        ny: 0.08 + Math.random() * 0.84,
+                        vx: (Math.random() - 0.5) * 0.008,
+                        vy: (Math.random() - 0.5) * 0.008,
+                        radius: 4.2
+                    });
+                }
+            } else if (targetCount < currentCount) {
+                state.particles.splice(targetCount);
+            }
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawBeakerScene() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Dimensions géométriques du bécher gradué (capacité max = 2,0 L)
+            const beakerW = Math.min(230, width * 0.62);
+            const beakerH = height * 0.76;
+            const beakerX = (width - beakerW) / 2 + 12;
+            const beakerY = (height - beakerH) / 2 + 10;
+            const cornerRadius = 18;
+
+            // Calcul de la hauteur du liquide (max 2,0 L = 92% de la hauteur du bécher)
+            const maxCapL = 2.0;
+            const fillFraction = Math.min(0.94, Math.max(0.05, (state.visual.volumeL / maxCapL) * 0.90));
+            const liquidH = beakerH * fillFraction;
+            const liquidY = beakerY + beakerH - liquidH;
+
+            // Couleur dynamique du liquide selon la concentration (bleu-violet de plus en plus intense)
+            const concRatio = Math.min(1, Math.max(0, state.visual.concentration / 80));
+            const r = Math.round(56 - concRatio * 25);
+            const g = Math.round(189 - concRatio * 135);
+            const b = Math.round(248 - concRatio * 30);
+            const alpha = (0.16 + concRatio * 0.68).toFixed(3);
+
+            // 1. Dessiner le liquide à l'intérieur du bécher (avec découpe arrondie en bas)
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(beakerX, beakerY);
+            ctx.lineTo(beakerX, beakerY + beakerH - cornerRadius);
+            ctx.quadraticCurveTo(beakerX, beakerY + beakerH, beakerX + cornerRadius, beakerY + beakerH);
+            ctx.lineTo(beakerX + beakerW - cornerRadius, beakerY + beakerH);
+            ctx.quadraticCurveTo(beakerX + beakerW, beakerY + beakerH, beakerX + beakerW, beakerY + beakerH - cornerRadius);
+            ctx.lineTo(beakerX + beakerW, beakerY);
+            ctx.closePath();
+            ctx.clip();
+
+            // Corps du liquide
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            ctx.fillRect(beakerX, liquidY, beakerW, liquidH);
+
+            // Ménisque supérieur du liquide
+            ctx.beginPath();
+            ctx.ellipse(beakerX + beakerW / 2, liquidY, beakerW / 2, 5, 0, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${Math.min(0.95, parseFloat(alpha) + 0.15)})`;
+            ctx.fill();
+
+            // 2. Mise à jour et dessin des particules de soluté (agitation thermique)
+            state.particles.forEach(p => {
+                // Légère agitation aléatoire (mouvement brownien)
+                p.vx += (Math.random() - 0.5) * 0.0015;
+                p.vy += (Math.random() - 0.5) * 0.0015;
+
+                // Amortissement pour garder un mouvement doux
+                p.vx *= 0.96;
+                p.vy *= 0.96;
+
+                p.nx += p.vx;
+                p.ny += p.vy;
+
+                // Rebonds sur les parois du liquide
+                if (p.nx < 0.06) { p.nx = 0.06; p.vx = Math.abs(p.vx); }
+                if (p.nx > 0.94) { p.nx = 0.94; p.vx = -Math.abs(p.vx); }
+                if (p.ny < 0.08) { p.ny = 0.08; p.vy = Math.abs(p.vy); }
+                if (p.ny > 0.93) { p.ny = 0.93; p.vy = -Math.abs(p.vy); }
+
+                const px = beakerX + p.nx * beakerW;
+                const py = liquidY + p.ny * Math.max(16, liquidH - 6);
+
+                // Dessin de la particule (bille violette avec contour blanc pour un contraste optimal)
+                ctx.beginPath();
+                ctx.arc(px, py, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#7c3aed';
+                ctx.fill();
+                ctx.lineWidth = 1.4;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+            });
+
+            ctx.restore();
+
+            // 3. Dessiner les parois en verre du bécher et le bec verseur
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            // Bec verseur en haut à gauche
+            ctx.moveTo(beakerX - 10, beakerY - 4);
+            ctx.lineTo(beakerX, beakerY + 6);
+            // Paroi gauche
+            ctx.lineTo(beakerX, beakerY + beakerH - cornerRadius);
+            // Coin bas gauche
+            ctx.quadraticCurveTo(beakerX, beakerY + beakerH, beakerX + cornerRadius, beakerY + beakerH);
+            // Fond
+            ctx.lineTo(beakerX + beakerW - cornerRadius, beakerY + beakerH);
+            // Coin bas droit
+            ctx.quadraticCurveTo(beakerX + beakerW, beakerY + beakerH, beakerX + beakerW, beakerY + beakerH - cornerRadius);
+            // Paroi droite
+            ctx.lineTo(beakerX + beakerW, beakerY);
+            ctx.stroke();
+
+            // Reflet de verre sur le côté gauche
+            ctx.beginPath();
+            ctx.moveTo(beakerX + 10, beakerY + 18);
+            ctx.lineTo(beakerX + 10, beakerY + beakerH - 22);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 4. Dessiner les graduations (de 0,25 L à 2,00 L)
+            ctx.font = '600 11px "JetBrains Mono", monospace';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            for (let vol = 0.25; vol <= 2.0; vol += 0.25) {
+                const frac = (vol / maxCapL) * 0.90;
+                const gy = beakerY + beakerH - beakerH * frac;
+                const isMajor = (vol * 100) % 50 === 0;
+                const tickLen = isMajor ? 18 : 10;
+
+                ctx.beginPath();
+                ctx.moveTo(beakerX, gy);
+                ctx.lineTo(beakerX + tickLen, gy);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = isMajor ? 2 : 1.2;
+                ctx.stroke();
+
+                if (isMajor) {
+                    ctx.fillStyle = '#334155';
+                    ctx.fillText(`${formatFr(vol, 1)} L`, beakerX - 8, gy);
+                }
+            }
+
+            // Étiquette flottante indiquant le volume actuel à droite du ménisque
+            const badgeText = `${Math.round(state.visual.volumeL * 1000)} mL`;
+            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+            const textW = ctx.measureText(badgeText).width + 14;
+            const badgeX = Math.min(width - textW - 6, beakerX + beakerW + 8);
+
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.roundRect(badgeX, liquidY - 11, textW, 22, 6);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(badgeText, badgeX + textW / 2, liquidY);
+
+            requestAnimationFrame(drawBeakerScene);
+        }
+
+        // Initialisation au chargement complet de la page
+        window.addEventListener('resize', resizeCanvas);
+        window.onload = function () {
+            resizeCanvas();
+            updateDissolution();
+            drawBeakerScene();
+        };
+    </script>
+</body>
+</html>
